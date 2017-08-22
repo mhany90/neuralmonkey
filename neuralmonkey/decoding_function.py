@@ -28,6 +28,7 @@ from abc import ABCMeta
 from typing import Any, Dict, List, Tuple, NamedTuple
 
 import tensorflow as tf
+import numpy as np
 from neuralmonkey.nn.projection import linear
 from neuralmonkey.nn.ortho_gru_cell import OrthoGRUCell
 
@@ -178,9 +179,10 @@ class Attention(BaseAttention):
             if self.input_weights is None:
                 weights = tf.nn.softmax(s)
             else:
-                weights_all = tf.nn.softmax(s) * self.input_weights
-                norm = tf.reduce_sum(weights_all, 1, keep_dims=True) + 1e-8
-                weights = weights_all / norm
+                masked_logits = tf.where(
+                    tf.equal(self.input_weights, 1),
+                    s, -np.inf * tf.ones_like(s))
+                weights = tf.nn.softmax(masked_logits)
             # pylint: enable=invalid-name
 
             # Now calculate the attention-weighted vector d.
