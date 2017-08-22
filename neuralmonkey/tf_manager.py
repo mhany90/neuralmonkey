@@ -245,6 +245,30 @@ class TensorFlowManager(object):
 
         for sess, file_name in zip(self.sessions, variable_files):
             self.saver.save(sess, file_name)
+    
+
+
+    def save_to_plaintext(self, variable_files: Union[str, List[str]]) -> None:
+        cwd = os.getcwd()
+        var_outdir = os.path.join(cwd,'variables/')
+        log("saving variable files to '{}'."
+            .format(var_outdir))
+        if not os.path.exists(var_outdir):
+            os.makedirs(var_outdir, 0o777)
+        for x in tf.global_variables():
+            log("saved variable '{}'.".format(x.name))
+            newname = x.name.replace("/",".")
+            fshape = str(newname + ".shape")
+            current_file = os.path.join(var_outdir, newname)
+            current_file_shape = os.path.join(var_outdir, fshape)
+            file = open(current_file, 'w')
+            fshape = open(current_file_shape, 'w')
+            x.eval(session = self.sessions[0]).tofile(file, sep='\t')
+            fshape.write(str(x.get_shape()))
+            fshape.close()
+            file.close()
+
+
 
     def restore(self, variable_files: Union[str, List[str]]) -> None:
         if isinstance(variable_files, str):
@@ -258,6 +282,44 @@ class TensorFlowManager(object):
             log("Loading variables from {}".format(file_name))
             self.saver.restore(sess, file_name)
 
+
+
+    
+    def restore_from_text(self, variables_dir, meta_file) -> None:
+        cwd = os.getcwd()
+        var_outdir = os.path.join(cwd, variables_dir)
+        saved_graph = tf.train.import_meta_graph('{}'.format(meta_file))
+        variable_files_txt = {}
+        variable_shapes = {}
+        for filename in os.listdir(var_outdir):
+            if filename.endswith(".shape"):
+                variable_name = filename.replace(".",'/')
+                file_location = os.path.join(var_outdir, filename)
+                variable_file = open(file_location, 'r')
+                vshape = variable_file.read()
+                variable_name = variable_name.replace("/shape","")
+                print(variable_name)
+                variable_shapes[variable_name] = vshape
+        for filename in os.listdir(var_outdir):
+            if not filename.endswith(".shape"):
+                variable_name = filename.replace(".",'/')
+                log("restoring variable: {}".format(variable_name))
+                file_location = os.path.join(var_outdir, filename)
+                variable_file = open(file_location, 'r')
+                variable = np.fromfile(variable_file, dtype=float, count=-1, sep='\t')
+                shape = variable_shapes[variable_name]
+                variable = np.reshape(variable, eval(shape))
+                variable_files_txt[variable_name] = variable
+        sess = self.sessions[0]
+        for x in tf.global_variables():                                          #tf.all_variables for old TF
+             vname = x.name
+             sess.run(vname, feed_dict={vname:  variable_files_txt[vname]})
+
+
+
+  
+    
+    
     def restore_best_vars(self) -> None:
         # TODO warn when link does not exist
         self.restore(self.variables_files[self.best_score_index])
