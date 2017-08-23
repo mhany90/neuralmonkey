@@ -10,7 +10,7 @@ variables.
 # pylint: disable=unused-import
 from typing import Any, List, Union, Optional
 # pylint: enable=unused-import
-
+import ast
 import os
 import time
 
@@ -262,7 +262,7 @@ class TensorFlowManager(object):
             current_file_shape = os.path.join(var_outdir, fshape)
             file = open(current_file, 'w')
             fshape = open(current_file_shape, 'w')
-            x.eval(session=self.sessions[0]).tofile(file, sep='\t')
+            x.ast.literal_eval(session=self.sessions[0]).tofile(file, sep='\t')
             fshape.write(str(x.get_shape()))
             fshape.close()
             file.close()
@@ -282,8 +282,6 @@ class TensorFlowManager(object):
             self.saver.restore(sess, file_name)
 
 
-
-    
     def restore_from_text(self, variables_dir, meta_file) -> None:
         cwd = os.getcwd()
         var_outdir = os.path.join(cwd, variables_dir)
@@ -308,7 +306,7 @@ class TensorFlowManager(object):
                 variable = np.fromfile(variable_file,
                                        dtype=float, count=-1, sep='\t')
                 shape = variable_shapes[variable_name]
-                variable = np.reshape(variable, eval(shape))
+                variable = np.reshape(variable, ast.literal_eval(shape))
                 variable_files_txt[variable_name] = variable
         sess = self.sessions[0]
         for x in tf.global_variables():
