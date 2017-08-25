@@ -246,7 +246,6 @@ class TensorFlowManager(object):
         for sess, file_name in zip(self.sessions, variable_files):
             self.saver.save(sess, file_name)
 
-
     def save_to_plaintext(self) -> None:
         cwd = os.getcwd()
         var_outdir = os.path.join(cwd, 'variables/')
@@ -258,16 +257,14 @@ class TensorFlowManager(object):
             log("saved variable '{}'.".format(x.name))
             newname = x.name.replace("/", ".")
             fshape = str(newname + ".shape")
-            current_file = os.path.join(var_outdir, newname)
-            current_file_shape = os.path.join(var_outdir, fshape)
+            current_file = str(os.path.join(var_outdir, newname))
+            current_file_shape = str(os.path.join(var_outdir, fshape))
             file = open(current_file, 'w')
             fshape = open(current_file_shape, 'w')
             x.ast.literal_eval(session=self.sessions[0]).tofile(file, sep='\t')
             fshape.write(str(x.get_shape()))
             fshape.close()
             file.close()
-
-
 
     def restore(self, variable_files: Union[str, List[str]]) -> None:
         if isinstance(variable_files, str):
@@ -280,7 +277,6 @@ class TensorFlowManager(object):
         for sess, file_name in zip(self.sessions, variable_files):
             log("Loading variables from {}".format(file_name))
             self.saver.restore(sess, file_name)
-
 
     def restore_from_text(self, variables_dir, meta_file) -> None:
         cwd = os.getcwd()
@@ -312,7 +308,6 @@ class TensorFlowManager(object):
         for x in tf.global_variables():
             vname = x.name
             sess.run(vname, feed_dict={vname: variable_files_txt[vname]})
-
 
     def restore_best_vars(self) -> None:
         # TODO warn when link does not exist
