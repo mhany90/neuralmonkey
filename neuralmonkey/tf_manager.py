@@ -260,10 +260,10 @@ class TensorFlowManager(object):
             current_file = str(os.path.join(var_outdir, newname))
             current_file_shape = str(os.path.join(var_outdir, fshape))
             file = open(current_file, 'w')
-            fshape = open(current_file_shape, 'w')
+            fshape_file = open(current_file_shape, 'w')
             x.ast.literal_eval(session=self.sessions[0]).tofile(file, sep='\t')
-            fshape.write(str(x.get_shape()))
-            fshape.close()
+            fshape_file.write(str(x.get_shape()))
+            fshape_file.close()
             file.close()
 
     def restore(self, variable_files: Union[str, List[str]]) -> None:
@@ -291,7 +291,6 @@ class TensorFlowManager(object):
                 variable_file = open(file_location, 'r')
                 vshape = variable_file.read()
                 variable_name = variable_name.replace("/shape", "")
-                print(variable_name)
                 variable_shapes[variable_name] = vshape
         for filename in os.listdir(var_outdir):
             if not filename.endswith(".shape"):
